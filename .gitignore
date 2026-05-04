@@ -1,0 +1,24 @@
+# Build artifacts
+.build-out/
+bootable.raw
+bootable.qcow2
+.ovmf-vars.fd
+
+# BuildStream cache
+.cache/
+.state/
+
+# Logs
+*.log
+nohup.out
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
