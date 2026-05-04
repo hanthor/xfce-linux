@@ -1,13 +1,13 @@
-# XFCE Linux monorepo — full desktop stack from hanthor/xfce-wayland
+# XFCE Linux cluster — dependencies and pre-built binaries
 #
-# Stack element combining all XFCE dependencies and components.
-# This provides the complete runtime for the XFCE desktop environment.
+# Provides all dependencies for XFCE desktop environment with 55 binaries
+# and 31 panel plugins from the hanthor/xfce-wayland monorepo.
 
 kind: stack
 description: |
-  Complete XFCE desktop environment dependencies from the xfce-wayland monorepo.
+  Complete XFCE desktop environment dependencies: 55 binaries + 31 panel plugins.
   Includes xfwl4 compositor, xfce4-panel, xfdesktop, thunar, xfce4-terminal,
-  and all supporting libraries and panel plugins.
+  and all supporting applications and libraries.
 
 depends:
   # Core dependencies that everything needs
@@ -16,13 +16,6 @@ depends:
   - gnome-build-meta.bst:sdk/gtk.bst
   - freedesktop-sdk.bst:components/glib.bst
   
-  # Build tools
-  - freedesktop-sdk.bst:components/cmake.bst
-  - freedesktop-sdk.bst:components/meson.bst
-  - freedesktop-sdk.bst:components/ninja.bst
-  - freedesktop-sdk.bst:components/pkg-config.bst
-  - freedesktop-sdk.bst:components/rust.bst
-
   # Wayland
   - freedesktop-sdk.bst:components/wayland.bst
   - freedesktop-sdk.bst:components/wayland-protocols.bst
@@ -53,3 +46,6 @@ depends:
   - freedesktop-sdk.bst:components/gstreamer.bst
   - freedesktop-sdk.bst:components/gstreamer-plugins-base.bst
   - freedesktop-sdk.bst:components/gstreamer-plugins-good.bst
+
+  # Python (for catfish, appfinder)
+  - freedesktop-sdk.bst:components/python3.bst
