@@ -23,3 +23,5 @@ nohup.out
 .DS_Store
 Thumbs.db
 files/xfce-binaries/install/
+files/sources/
+*.tar.gz
