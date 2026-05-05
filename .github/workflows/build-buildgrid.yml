@@ -35,6 +35,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      - name: Install key generation deps
+        run: sudo apt-get install -y --no-install-recommends openssl efitools uuid-runtime 2>/dev/null || true
+
       - name: Restore BST staged junctions
         run: |
           # Staged junctions are gitlinks - clone them at pinned commits
@@ -48,6 +51,21 @@ jobs:
 
           ls ".bst/staged-junctions/gnome-build-meta.bst/70a9a4fdaf1e84d70ccc871ea316be3e2f2be870723bda7cd07d7bca06b053c9/project.conf" && echo "✓ gnome-build-meta staged junction ready"
           ls ".bst/staged-junctions/freedesktop-sdk.bst/f3b0d4f66c9a628b0453e7030963eb530e55fb69ca70d8c6402bbe8dd3108800/project.conf" && echo "✓ freedesktop-sdk staged junction ready"
+
+          # Generate boot keys required by gnome-build-meta/efitools (snakeoil for CI)
+          BOOTKEYS=".bst/staged-junctions/gnome-build-meta.bst/70a9a4fdaf1e84d70ccc871ea316be3e2f2be870723bda7cd07d7bca06b053c9/files/boot-keys"
+          make -C "$BOOTKEYS" IMPORT_MODE=snakeoil 2>/dev/null || \
+          (cd "$BOOTKEYS" && \
+            for key in PK PK_MIC KEK KEK_MIC DB VENDOR MODULES SYSEXT; do \
+              openssl req -new -x509 -newkey rsa:2048 -keyout "${key}.key" -out "${key}.crt" \
+                -days 3650 -nodes -subj "/CN=CI-${key}" 2>/dev/null; \
+            done && \
+            touch tpm2-pcr-private.pem tpm2-pcr-public.pem \
+                  fstab-tpm2-pcr-private.pem fstab-tpm2-pcr-public.pem \
+                  import-pubring.pgp && \
+            mkdir -p modules && cat MODULES.crt SYSEXT.crt > modules/linux-module-cert.crt 2>/dev/null || true && \
+            mkdir -p extra-db extra-kek && touch extra-db/.keep extra-kek/.keep) || true
+          ls "$BOOTKEYS/PK.key" && echo "✓ boot keys generated" || echo "⚠ boot key generation failed" 
 
       - uses: extractions/setup-just@v4
 
