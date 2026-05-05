@@ -1,0 +1,26 @@
+name: Build and push bst2 to GHCR
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Pull and re-push bst2
+        run: |
+          podman pull registry.gitlab.com/freedesktop-sdk/infrastructure/freedesktop-sdk-docker-images/bst2:latest
+          BST_VER=$(podman run --rm registry.gitlab.com/freedesktop-sdk/infrastructure/freedesktop-sdk-docker-images/bst2:latest bst --version)
+          echo "BST version: $BST_VER"
+          podman tag registry.gitlab.com/freedesktop-sdk/infrastructure/freedesktop-sdk-docker-images/bst2:latest ghcr.io/hanthor/bst2:latest
+          podman tag registry.gitlab.com/freedesktop-sdk/infrastructure/freedesktop-sdk-docker-images/bst2:latest "ghcr.io/hanthor/bst2:${BST_VER}"
+          podman push ghcr.io/hanthor/bst2:latest
+          podman push "ghcr.io/hanthor/bst2:${BST_VER}"
+          echo "Pushed ghcr.io/hanthor/bst2:${BST_VER}"
