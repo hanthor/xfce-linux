@@ -16,8 +16,8 @@ config:
     # Replace the element so the OCI image has XFCE instead of GNOME apps
     core/meta-gnome-core-apps.bst: core/meta-xfce-core-apps.bst
 
-    # Replace the element so the OCI image generates XFCE Linux os-release file
-    oci/integration/os-release.bst: oci/os-release.bst
+    # TODO: os-release is handled by gnome-build-meta; skip custom override for now
+    # oci/integration/os-release.bst: oci/os-release.bst
 
     plugins/buildstream-plugins.bst: plugins/buildstream-plugins.bst
     plugins/buildstream-plugins-community.bst: plugins/buildstream-plugins-community.bst

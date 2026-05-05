@@ -1,26 +1,5 @@
 kind: manual
-description: XFCE Linux os-release
+description: XFCE Linux os-release configuration (pass-through element)
 
 depends:
   - freedesktop-sdk.bst:public-stacks/runtime-minimal.bst
-
-config:
-  install-commands:
-    - |
-      cat > os-release <<EOF
-      PRETTY_NAME="XFCE Linux"
-      NAME="XFCE Linux"
-      VERSION="0.1.0"
-      VERSION_ID="0"
-      IMAGE_VERSION="0"
-      ID=xfce-linux
-      HOME_URL="https://github.com/hanthor/xfce-linux"
-      BUG_REPORT_URL="https://github.com/hanthor/xfce-linux/issues"
-      DEFAULT_HOSTNAME="xfce-linux"
-      LOGO="xfce-logo"
-      CPE_NAME="cpe:/o:xfce_linux:xfce_linux:0.1"
-      HOME_URL_DOCUMENTATION="https://github.com/hanthor/xfce-linux"
-      ANSIColor="1;34"
-      EOF
-
-      install -Dm644 os-release "${install-root}/usr/lib/os-release"
