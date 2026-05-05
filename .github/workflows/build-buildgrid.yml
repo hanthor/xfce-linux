@@ -53,7 +53,7 @@ jobs:
           restore-keys: bst-sources-xfce-
 
       - name: Pull bst2 image
-        run: docker pull "$BST2_IMAGE"
+        run: podman pull "$BST2_IMAGE"
 
       - name: Write BuildGrid config
         run: |
