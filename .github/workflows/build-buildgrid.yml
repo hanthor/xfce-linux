@@ -19,7 +19,7 @@ env:
   IMAGE_NAME: xfce-linux
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
   BST_TARGET: oci/xfce-linux.bst
-  BST2_IMAGE: registry.gitlab.com/freedesktop-sdk/infrastructure/freedesktop-sdk-docker-images/bst2:latest
+  BST2_IMAGE: ghcr.io/hanthor/bst2:latest
   BUILDGRID_ENDPOINT: grpc://buildgrid.manatee-basking.ts.net:50051
 
 concurrency:
