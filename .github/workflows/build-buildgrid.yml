@@ -40,8 +40,7 @@ jobs:
       - name: Connect to Tailscale
         uses: tailscale/github-action@v3
         with:
-          oauth-client-id: ${{ secrets.TAILSCALE_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TAILSCALE_OAUTH_CLIENT_SECRET }}
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
 
       - name: Verify BuildGrid reachable
         run: nc -zv buildgrid.manatee-basking.ts.net 50051 && echo "✓ BuildGrid reachable"
