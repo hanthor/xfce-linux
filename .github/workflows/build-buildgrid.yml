@@ -42,7 +42,7 @@ jobs:
             ".bst/staged-junctions/gnome-build-meta.bst/70a9a4fdaf1e84d70ccc871ea316be3e2f2be870723bda7cd07d7bca06b053c9" 2>/dev/null || true
           git -C ".bst/staged-junctions/gnome-build-meta.bst/70a9a4fdaf1e84d70ccc871ea316be3e2f2be870723bda7cd07d7bca06b053c9" checkout c918b12e3970866717917090396b416b15f45fd0 2>/dev/null || true
 
-          git clone --no-checkout https://gitlab.freedesktop.org/freedesktop-sdk/freedesktop-sdk.git \
+          git clone --no-checkout https://gitlab.com/freedesktop-sdk/freedesktop-sdk.git \
             ".bst/staged-junctions/freedesktop-sdk.bst/f3b0d4f66c9a628b0453e7030963eb530e55fb69ca70d8c6402bbe8dd3108800" 2>/dev/null || true
           git -C ".bst/staged-junctions/freedesktop-sdk.bst/f3b0d4f66c9a628b0453e7030963eb530e55fb69ca70d8c6402bbe8dd3108800" checkout 3361ede6aa02d79d2861e9c8782c799ab07d1cea 2>/dev/null || true
 
