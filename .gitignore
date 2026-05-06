@@ -1,27 +1,56 @@
-# Build artifacts
-.build-out/
-bootable.raw
-bootable.qcow2
-.ovmf-vars.fd
-
-# BuildStream cache
+# BuildStream cache and artifacts
+.bst/
 .cache/
-.state/
+*.cache
+buildstream-*.log
 
-# Logs
+# QEMU and VM artifacts
+*.raw
+*.qcow2
+*.fd
+.ovmf*
+
+# Container images and archives
+*.tar
+*.tar.gz
+*.oci
+*.iso
+
+# Build logs and temporary files
 *.log
-nohup.out
+rebuild.log
+build.log
+*.tmp
+*.swp
+*~
+.DS_Store
 
-# IDE
-.idea/
+# IDE and editor files
 .vscode/
+.idea/
 *.swp
 *.swo
 *~
+.emacs*
 
-# OS
-.DS_Store
-Thumbs.db
-files/xfce-binaries/install/
-files/sources/
-*.tar.gz
+# Python cache
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Local development
+.env
+.local/
+venv/
+env/
+
+# Git hooks (local)
+.git/hooks/*.local
+
+# Temporary junction checkouts (BuildStream)
+.bst/staged-junctions/
+
+# Node modules (if used in any scripts)
+node_modules/
