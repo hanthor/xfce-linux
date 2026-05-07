@@ -1,0 +1,157 @@
+name: Build and Publish xfce-linux to GHCR
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+    paths:
+      - 'elements/**'
+      - 'files/**'
+      - 'patches/**'
+      - 'include/**'
+      - 'project.conf'
+      - '.github/workflows/build-and-publish-xfce-linux.yml'
+  workflow_dispatch:
+    inputs:
+      push_to_registry:
+        description: 'Push image to GHCR'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: xfce-linux
+
+jobs:
+  build:
+    name: Build xfce-linux OCI Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Podman
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman buildah
+          podman --version
+
+      - name: Install BuildStream and dependencies
+        run: |
+          sudo apt-get install -y \
+            python3-pip \
+            python3-venv \
+            git \
+            curl
+          
+          pip3 install --user buildstream
+          ~/.local/bin/bst --version || bst --version
+
+      - name: Install just
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+          just --version
+
+      - name: Extract metadata
+        id: meta
+        run: |
+          DATE_TAG=$(date -u +%Y%m%d)
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          
+          echo "date-tag=${DATE_TAG}" >> $GITHUB_OUTPUT
+          echo "short-sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+          
+          if [[ "${{ github.ref }}" == "refs/heads/main" || "${{ github.ref }}" == "refs/heads/master" ]]; then
+            echo "image-tag=latest" >> $GITHUB_OUTPUT
+          else
+            echo "image-tag=dev-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build xfce-linux image with BuildStream
+        run: |
+          export PATH=$HOME/.local/bin:$PATH
+          cd ${{ github.workspace }}
+          
+          echo "Building xfce-linux OCI image..."
+          bst build oci/xfce-linux.bst
+        timeout-minutes: 180
+
+      - name: Export OCI image
+        run: |
+          export PATH=$HOME/.local/bin:$PATH
+          cd ${{ github.workspace }}
+          
+          echo "Exporting image..."
+          just export
+        timeout-minutes: 60
+
+      - name: Display image info
+        run: |
+          sudo podman images | grep -i xfce || echo "No xfce image found"
+          sudo podman images | head -10
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Tag and push image to GHCR
+        run: |
+          IMAGE_ID=$(sudo podman images | grep "localhost/xfce-linux" | grep "latest" | awk '{print $3}')
+          
+          if [ -z "$IMAGE_ID" ]; then
+            echo "❌ Error: Could not find built image"
+            exit 1
+          fi
+          
+          echo "Found image: $IMAGE_ID"
+          
+          GHCR_IMAGE="${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}"
+          
+          # Tag locally
+          sudo podman tag "localhost/xfce-linux:latest" "${GHCR_IMAGE}:latest"
+          sudo podman tag "localhost/xfce-linux:latest" "${GHCR_IMAGE}:${{ steps.meta.outputs.date-tag }}"
+          sudo podman tag "localhost/xfce-linux:latest" "${GHCR_IMAGE}:${{ steps.meta.outputs.short-sha }}"
+          
+          echo "✅ Pushing images to GHCR..."
+          
+          sudo podman push "${GHCR_IMAGE}:latest"
+          sudo podman push "${GHCR_IMAGE}:${{ steps.meta.outputs.date-tag }}"
+          sudo podman push "${GHCR_IMAGE}:${{ steps.meta.outputs.short-sha }}"
+          
+          echo "Image URLs:"
+          echo "  ${GHCR_IMAGE}:latest"
+          echo "  ${GHCR_IMAGE}:${{ steps.meta.outputs.date-tag }}"
+          echo "  ${GHCR_IMAGE}:${{ steps.meta.outputs.short-sha }}"
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.push_to_registry == 'true')
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags:**" >> $GITHUB_STEP_SUMMARY
+          echo "- \`latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ steps.meta.outputs.date-tag }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ steps.meta.outputs.short-sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**View package:** https://github.com/users/${{ github.repository_owner }}/packages" >> $GITHUB_STEP_SUMMARY
