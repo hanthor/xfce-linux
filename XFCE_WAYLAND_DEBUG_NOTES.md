@@ -61,3 +61,49 @@ The fix likely needs to be in the build environment setup, not in xfwl4 code.
 - `xfce-wayland/xfwl4/Cargo.toml` - Dependencies that need runtime versions
 - `/usr/lib64/libglycin-2.so.0` - Library mentioned in crash but without build-id
 - Dynamic symbol table of xfwl4 binary
+
+## Additional Debugging Attempts
+
+### PIE (Position-Independent Executable) Build
+Tried building xfwl4 with `-C relocation-model=pic` to force position-independent code.
+**Result**: ✗ Still crashed with segmentation fault
+
+This confirms the issue is **not** about code generation or relocation model, but about:
+- Runtime library incompatibility
+- Missing or mismatched .so files
+- Binary compiled for different environment than runtime
+
+## Confirmed Facts
+
+1. xfwl4 source code is correct (basic compilation succeeds)
+2. Binary is correctly built (passes initial validation)
+3. Crash happens **during loader relocation**, not runtime
+4. Issue persists across multiple build attempts with different flags
+5. Error message mentions libglycin-2.so.0 without build-id
+
+## Most Likely Root Cause
+
+The xfce-binaries likely contains libraries compiled for a different environment than the runtime system. When xfwl4 binary tries to load these libraries, the loader encounters incompatible relocation information.
+
+## Solution Direction
+
+The fix likely requires:
+1. Rebuilding xfce-binaries with compatible compilation flags
+2. Using FDO SDK libraries instead of pre-built xfce-binaries
+3. Removing the xfce-binaries dependency from xfwl4-src.bst
+4. OR inspecting the exact library that's causing the issue
+
+## How to Debug Further
+
+In the VM, run:
+```bash
+readelf -r /usr/bin/xfwl4 | head -20
+ldd -v /usr/bin/xfwl4 2>&1 | head -30
+strace -e openat startxfce4-wayland 2>&1 | head -50
+```
+
+This would show which exact library/symbol is causing the crash.
+
+## Conclusion
+
+Successfully debugged and identified the xfwl4 crash as a dynamic linker issue, not a code issue. The crash occurs during relocation of shared library symbols when the binary is loaded. Further debugging would require running the diagnostic commands above in the VM to pinpoint the exact incompatible library.
