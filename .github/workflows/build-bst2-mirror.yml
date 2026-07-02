@@ -19,8 +19,8 @@ jobs:
           podman pull registry.gitlab.com/freedesktop-sdk/infrastructure/freedesktop-sdk-docker-images/bst2:latest
           BST_VER=$(podman run --rm registry.gitlab.com/freedesktop-sdk/infrastructure/freedesktop-sdk-docker-images/bst2:latest bst --version)
           echo "BST version: $BST_VER"
-          podman tag registry.gitlab.com/freedesktop-sdk/infrastructure/freedesktop-sdk-docker-images/bst2:latest ghcr.io/hanthor/bst2:latest
-          podman tag registry.gitlab.com/freedesktop-sdk/infrastructure/freedesktop-sdk-docker-images/bst2:latest "ghcr.io/hanthor/bst2:${BST_VER}"
-          podman push ghcr.io/hanthor/bst2:latest
-          podman push "ghcr.io/hanthor/bst2:${BST_VER}"
-          echo "Pushed ghcr.io/hanthor/bst2:${BST_VER}"
+          podman tag registry.gitlab.com/freedesktop-sdk/infrastructure/freedesktop-sdk-docker-images/bst2:latest ghcr.io/tuna-os/bst2:latest
+          podman tag registry.gitlab.com/freedesktop-sdk/infrastructure/freedesktop-sdk-docker-images/bst2:latest "ghcr.io/tuna-os/bst2:${BST_VER}"
+          podman push ghcr.io/tuna-os/bst2:latest
+          podman push "ghcr.io/tuna-os/bst2:${BST_VER}"
+          echo "Pushed ghcr.io/tuna-os/bst2:${BST_VER}"
