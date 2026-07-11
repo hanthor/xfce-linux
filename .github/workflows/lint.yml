@@ -38,7 +38,7 @@ jobs:
             xfce-linux/src/install-flatpaks.sh
             xfce-linux/src/dracut/95xfce-linux-isofile/module-setup.sh
             xfce-linux/src/dracut/95xfce-linux-isofile/xfce-linux-isofile.sh
-          severity: warning
+          severity: error
 
   yamllint:
     name: yamllint
