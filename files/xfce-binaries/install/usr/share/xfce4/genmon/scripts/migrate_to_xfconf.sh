@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 #
 # Description:	Utility shell file to migrate old genmon .rc configuration files
 #               to xfconf database entries
@@ -36,7 +36,7 @@ fi
 RCLOCATION="$HOME/.config/xfce4/panel"
 
 # loop through each genmon instance
-for f in $(ls $RCLOCATION/genmon*.rc)
+for f in "$RCLOCATION"/genmon*.rc
 do
     # get settings
     ID=$(echo ${f%.*} | sed 's/.*-//')
