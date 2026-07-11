@@ -6,6 +6,7 @@ Tests the main() function logic with mocked os.setxattr and file I/O.
 import importlib.util
 import json
 import os
+import sys
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 

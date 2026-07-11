@@ -29,7 +29,7 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-_ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*m")
+_ANSI_ESCAPE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
 
 def strip_ansi(s: str) -> str:
     return _ANSI_ESCAPE.sub("", s)
