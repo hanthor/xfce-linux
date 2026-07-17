@@ -93,9 +93,9 @@ config:
             'org.opencontainers.image.description': 'A Wayland-native XFCE desktop image with xfwl4 compositor'
             'org.opencontainers.image.vendor': 'XFCE Linux Project'
             'org.opencontainers.image.licenses': 'GPL-3.0'
-            'org.opencontainers.image.url': 'https://github.com/hanthor/xfce-linux'
-            'org.opencontainers.image.source': 'https://github.com/hanthor/xfce-linux'
+            'org.opencontainers.image.url': 'https://github.com/tuna-os/xfce-linux'
+            'org.opencontainers.image.source': 'https://github.com/tuna-os/xfce-linux'
             'containers.bootc': '1'
         index-annotations:
-          'org.opencontainers.image.ref.name': 'ghcr.io/hanthor/xfce-linux:latest'
+          'org.opencontainers.image.ref.name': 'ghcr.io/tuna-os/xfce-linux:latest'
       EOF

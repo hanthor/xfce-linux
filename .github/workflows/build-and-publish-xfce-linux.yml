@@ -1,7 +1,7 @@
 name: Build xfce-linux
 
 # Mirrors the tromso CASD pattern: runs bst2 inside a container on the runner,
-# exports the OCI image, and pushes to ghcr.io/hanthor/xfce-linux.
+# exports the OCI image, and pushes to ghcr.io/tuna-os/xfce-linux.
 
 on:
   workflow_dispatch:
