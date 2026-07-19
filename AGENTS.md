@@ -57,3 +57,15 @@ Heavy builds should run on the `kanpur` box or in CI, not on a laptop.
 - Committed binary trees (`files/xfce-binaries/`, `xfwl4-headers/`,
   big filemaps — issues #15/#16/#17) are known debt from the xfwl4
   bring-up; don't add more.
+
+## CI gate rules (hard-won)
+
+- Never add `paths:` filters to workflows whose jobs are required checks —
+  a non-reporting required check deadlocks automerge (test.yml filters were
+  removed for exactly this).
+- Renaming a required job means updating the branch-protection contexts in
+  the same PR.
+- Never wrap a gate in `|| echo` — that's how checks go silently dead.
+- `tests/pytest/test_iso_invariants.py` encodes shipped bug classes; when
+  you fix a CI/ISO bug, add an invariant there and a row to
+  docs/ci-and-iso-pipeline.md.
