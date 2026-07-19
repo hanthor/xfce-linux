@@ -1,0 +1,59 @@
+# XFCE Linux — Agent Context
+
+XFCE Linux is a BuildStream-based, vanilla-from-source XFCE (Wayland, xfwl4)
+OCI/bootc image. Sister project of `tuna-os/tromso` (KDE + Aurora layer);
+both are modeled on projectbluefin/dakota + dakota-iso. An opinionated
+experience layer on top (like tromso's Aurora layer) is planned but not yet
+started.
+
+## Architecture
+
+- **Base**: gnome-build-meta's gnomeos OCI image (junction `gnome-build-meta.bst`,
+  branch gnome-50) — provides freedesktop-sdk, systemd, kernel, bootc,
+  plymouth, GDM.
+- **XFCE layer**: `elements/xfce-linux/` (xfconf, libxfce4*, xfwl4 compositor,
+  session config) composed in `elements/oci/layers/`, final target
+  `oci/xfce-linux.bst` → `ghcr.io/tuna-os/xfce-linux`.
+- **Live ISO**: `xfce-linux/` directory (Containerfile + src/) + `iso.justfile`
+  recipes. See `docs/ci-and-iso-pipeline.md` for the full chain and the
+  CI troubleshooting log.
+
+## Reference repos are authoritative
+
+Never invent workarounds for build issues. For infrastructure, bootc,
+systemd, initramfs, OCI composition: copy patterns from
+gnome-build-meta (gitlab.gnome.org/GNOME/gnome-build-meta, branch gnome-50)
+and projectbluefin/dakota. For XFCE package specifics: Arch PKGBUILDs and
+gitlab.xfce.org upstream.
+
+## Commands
+
+```bash
+just bst build oci/xfce-linux.bst   # full image build (bst2 container)
+just export && just lint            # OCI export + bootc container lint
+just iso-sd-boot xfce-linux         # live ISO (sudo; needs podman/buildah/xorriso/mtools)
+just debug=1 iso-sd-boot xfce-linux # ISO with SSH enabled (liveuser/live)
+just boot-iso-vnc xfce-linux        # boot ISO, VNC on :10, serial telnet 4445
+just luks-test-qemu xfce-linux      # full LUKS install e2e (needs built ISO)
+```
+
+Heavy builds should run on the `kanpur` box or in CI, not on a laptop.
+
+## Gotchas (hard-won; don't reintroduce)
+
+- `Justfile` is the single just entry point; ISO recipes live in
+  `iso.justfile` via `import`. Never create a second root justfile —
+  just ≥1.30 hard-errors on ambiguity and all CI dies.
+- The installer frontend is `org.tunaos.InstallerXfce` from the tuna-os OCI
+  flatpak remote (`https://tunaos.org/flatpak/tuna-os.flatpakrepo`), baked
+  into the ISO only — never into the OS image. Keep
+  `install-flatpaks.sh` and `configure-live.sh` referring to the *same* app ID.
+- Plymouth: the gnomeos parent already ships plymouth + GNOME watermark;
+  `elements/xfce-linux/plymouth-theme.bst` shadows it (XFCE logo) and must
+  keep its `runtime-depends` on the GNOME theme to win the staging order.
+- Renovate handles Actions/containers; `.bst` refs are bumped by
+  `track-bst-sources.yml` (`bst source track`). Junction bumps
+  (freedesktop-sdk, gnome-build-meta) are review-required.
+- Committed binary trees (`files/xfce-binaries/`, `xfwl4-headers/`,
+  big filemaps — issues #15/#16/#17) are known debt from the xfwl4
+  bring-up; don't add more.
