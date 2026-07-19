@@ -1,12 +1,9 @@
 name: Test
 
 on:
+  # No path filters: these are required checks and must report on every PR —
+  # a path-filtered required check never reports and deadlocks automerge.
   pull_request:
-    paths:
-      - 'scripts/**'
-      - 'xfce-linux/src/**'
-      - 'tests/**'
-      - 'build-xfwl4.sh'
   push:
     branches: [main]
   workflow_dispatch:
@@ -48,24 +45,10 @@ jobs:
           done
 
       - name: Install pytest
-        run: |
-          sudo apt-get install -y -qq python3-pytest 2>/dev/null || pip3 install --user pytest 2>/dev/null || true
+        run: sudo apt-get install -y -qq python3-pytest
 
       - name: Run pytest tests
-        shell: bash
-        run: |
-          echo "=== Pytest Tests ==="
-          FAILED=0
-          if python3 -m pytest --version &>/dev/null; then
-            if ls tests/pytest/*.py &>/dev/null; then
-              python3 -m pytest tests/pytest/ -v --tb=short || FAILED=1
-            else
-              echo "  No pytest test files found"
-            fi
-          else
-            echo "  pytest not available — skipping"
-          fi
-          exit $FAILED
+        run: python3 -m pytest tests/pytest/ -v --tb=short
 
       - name: Test summary
         if: always()
@@ -77,3 +60,26 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "Run locally: \`bats tests/bats/*.bats\`" >> "$GITHUB_STEP_SUMMARY"
           echo "Run locally: \`python3 -m pytest tests/pytest/ -v\`" >> "$GITHUB_STEP_SUMMARY"
+
+  bst-graph:
+    name: BuildStream Graph
+    runs-on: ubuntu-latest
+    container:
+      image: registry.gitlab.com/freedesktop-sdk/infrastructure/freedesktop-sdk-docker-images/bst2:64eb0b4930d57a92710822898fb73af6cc1ae35d
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate full element graph
+        run: |
+          bst --no-interactive show --deps all --format "%{name} %{state}" oci/xfce-linux.bst > /tmp/graph.txt
+          wc -l /tmp/graph.txt
+
+  just-parse:
+    name: Just Parse
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: extractions/setup-just@v4
+      - name: Parse justfiles
+        run: |
+          just --summary > /dev/null
+          just --evaluate > /dev/null
