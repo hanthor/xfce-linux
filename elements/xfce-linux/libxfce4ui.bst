@@ -20,5 +20,5 @@ build-depends:
 sources:
 - kind: git_repo
   url: https://gitlab.xfce.org/xfce/libxfce4ui.git
-  track: master
+  track: libxfce4ui-[0-9]*
   ref: libxfce4ui-4.21.7-70-g164e9b2f8910341d17f2efa19321e581305065e1

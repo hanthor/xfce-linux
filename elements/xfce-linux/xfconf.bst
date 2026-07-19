@@ -20,5 +20,5 @@ build-depends:
 sources:
 - kind: git_repo
   url: https://gitlab.xfce.org/xfce/xfconf.git
-  track: master
+  track: xfconf-[0-9]*
   ref: xfconf-4.21.2-6-g6655bb3f37eaf1d67269f46f29bd42e55d59c0bf

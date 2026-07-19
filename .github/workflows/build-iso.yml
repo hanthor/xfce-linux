@@ -12,7 +12,7 @@ on:
     # Rebuild the ISO whenever a fresh OCI image lands on GHCR.
     workflows: ["Build xfce-linux (Multi-Runner)"]
     types: [completed]
-    branches: [main]
+    branches: [main, stable]
   workflow_dispatch:
     inputs:
       skip_upload:
@@ -32,6 +32,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Determine channel
+        id: channel
+        run: |
+          BRANCH="${{ github.event.workflow_run.head_branch || github.ref_name }}"
+          if [ "$BRANCH" = "stable" ]; then
+            echo "name=stable" >> "$GITHUB_OUTPUT"
+            echo "payload_tag=stable" >> "$GITHUB_OUTPUT"
+            echo "r2_prefix=xfce-linux/stable" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=nightly" >> "$GITHUB_OUTPUT"
+            echo "payload_tag=latest" >> "$GITHUB_OUTPUT"
+            echo "r2_prefix=xfce-linux" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Point ISO payload at channel image
+        run: echo "ghcr.io/tuna-os/xfce-linux:${{ steps.channel.outputs.payload_tag }}" > xfce-linux/payload_ref
 
       - name: Free disk space
         uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
@@ -86,10 +105,10 @@ jobs:
         run: |
           ISO="${{ steps.iso.outputs.path }}"
           DATED="${{ steps.iso.outputs.dated }}"
-          rclone copyto --log-level INFO --checksum --s3-no-check-bucket "$ISO" "R2:${R2_BUCKET}/xfce-linux/${DATED}"
-          rclone copyto --log-level INFO --s3-no-check-bucket "$ISO" "R2:${R2_BUCKET}/xfce-linux/xfce-linux-live-latest.iso"
+          rclone copyto --log-level INFO --checksum --s3-no-check-bucket "$ISO" "R2:${R2_BUCKET}/${{ steps.channel.outputs.r2_prefix }}/${DATED}"
+          rclone copyto --log-level INFO --s3-no-check-bucket "$ISO" "R2:${R2_BUCKET}/${{ steps.channel.outputs.r2_prefix }}/xfce-linux-live-latest.iso"
           rclone copyto --log-level INFO --s3-no-check-bucket \
-            "${{ steps.checksum.outputs.path }}" "R2:${R2_BUCKET}/xfce-linux/${{ steps.checksum.outputs.name }}"
+            "${{ steps.checksum.outputs.path }}" "R2:${R2_BUCKET}/${{ steps.channel.outputs.r2_prefix }}/${{ steps.checksum.outputs.name }}"
         continue-on-error: true
 
       - name: Boot verification (UEFI + serial)
