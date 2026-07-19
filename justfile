@@ -255,3 +255,238 @@ boot-iso-vnc target:
         -netdev user,id=net0,hostfwd=tcp:127.0.0.1:2222-:22 \
         -serial telnet:127.0.0.1:4445,server,nowait \
         -no-reboot
+
+# ─────────────────────────────────────────────────────────────────────────────
+# LUKS install end-to-end test (ported from projectbluefin/dakota-iso)
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# Full CI test sequence:
+#   just debug=1 iso-sd-boot xfce-linux
+#   just luks-test-qemu xfce-linux
+#
+# Or step-by-step:
+#   just luks-boot-qemu-live xfce-linux       # boot live ISO in QEMU (daemonized)
+#   just luks-install-qemu xfce-linux         # SSH fisherman install
+#   just luks-boot-qemu-installed xfce-linux  # reboot QEMU into installed disk
+#   just luks-unlock-qemu xfce-linux          # send passphrase via QEMU monitor
+
+# Path to a local fisherman checkout for bootcDirect (ostree) installs; unused
+# on the default composefs path.
+fisher_repo := ""
+
+# QEMU memory (MiB) / vCPUs for the e2e test VMs.
+qemu-mem := "8192"
+qemu-smp := "4"
+
+# QEMU install disk path (override with: just luks-qemu-disk=/path/disk.qcow2 ...)
+luks-qemu-disk := "/var/tmp/xfce-linux-luks-install.qcow2"
+# Scratch disk mounted over /var/tmp inside the live VM — prevents ENOSPC
+# during OCI blob extraction (overlay tmpfs is small).
+luks-scratch-disk := "/var/tmp/xfce-linux-luks-scratch.img"
+
+# QEMU monitor sockets and serial logs
+luks-qemu-monitor-live := "/tmp/xfce-linux-qemu-live.sock"
+luks-qemu-monitor-installed := "/tmp/xfce-linux-qemu-installed.sock"
+luks-qemu-serial-live := "/tmp/xfce-linux-qemu-live-serial.log"
+luks-qemu-serial-installed := "/tmp/xfce-linux-qemu-installed-serial.log"
+
+# SSH port for QEMU SLIRP forwarding
+luks-qemu-ssh-port := "2222"
+
+# Full end-to-end test: build the ISO then run the LUKS install + boot test.
+# Usage: just debug=1 e2e xfce-linux
+e2e target:
+    #!/usr/bin/bash
+    set -euo pipefail
+    echo "=== Step 1/2: Building ISO (debug={{debug}}, installer_channel={{installer_channel}}) ==="
+    just debug={{debug}} installer_channel={{installer_channel}} output_dir={{output_dir}} iso-sd-boot {{target}}
+    echo "=== Step 2/2: LUKS end-to-end test ==="
+    rm -f /var/tmp/xfce-linux-luks-install-*.qcow2 /var/tmp/xfce-linux-luks-scratch-*.img \
+               "{{luks-qemu-monitor-live}}" "{{luks-qemu-monitor-installed}}" \
+               "{{luks-qemu-serial-live}}" "{{luks-qemu-serial-installed}}"
+    just luks-test-qemu {{target}}
+
+# Run the full LUKS end-to-end test in QEMU (CI entry point).
+# Builds nothing — expects the ISO to already exist in {{output_dir}}.
+luks-test-qemu target installer_channel="stable":
+    #!/usr/bin/bash
+    set -euo pipefail
+    DISK="/var/tmp/xfce-linux-luks-install-{{target}}-{{installer_channel}}.qcow2"
+    SCRATCH="/var/tmp/xfce-linux-luks-scratch-{{target}}-{{installer_channel}}.img"
+    just luks-qemu-disk="$DISK" luks-scratch-disk="$SCRATCH" luks-boot-qemu-live {{target}}
+    just luks-qemu-ssh-port={{luks-qemu-ssh-port}} luks-install-qemu {{target}}
+    just luks-qemu-disk="$DISK" luks-scratch-disk="$SCRATCH" luks-boot-qemu-installed {{target}}
+    just luks-qemu-monitor-installed={{luks-qemu-monitor-installed}} \
+         luks-qemu-serial-installed={{luks-qemu-serial-installed}} \
+         luks-unlock-qemu {{target}}
+
+# Boot the live ISO in QEMU (daemonized) with a blank install disk attached.
+luks-boot-qemu-live target:
+    #!/usr/bin/bash
+    set -euo pipefail
+    QEMU=$(command -v /usr/libexec/qemu-kvm /usr/bin/qemu-kvm \
+               /usr/bin/qemu-system-x86_64 2>/dev/null | head -1)
+    [[ -z "$QEMU" ]] && { echo "qemu-kvm / qemu-system-x86_64 not found" >&2; exit 1; }
+    ISO=$(ls {{output_dir}}/{{target}}-live.iso 2>/dev/null | head -1 || true)
+    if [[ -z "$ISO" ]]; then
+        echo "No ISO found — run: just debug=1 iso-sd-boot {{target}}" >&2
+        exit 1
+    fi
+
+    OVMF_CODE=""; OVMF_VARS=""
+    for f in /usr/share/OVMF/OVMF_CODE_4M.fd /usr/share/OVMF/OVMF_CODE.fd \
+              /usr/share/edk2/ovmf/OVMF_CODE.fd /usr/share/ovmf/OVMF.fd; do
+        [[ -f "$f" ]] && { OVMF_CODE="$f"; break; }
+    done
+    for f in /usr/share/OVMF/OVMF_VARS_4M.fd /usr/share/OVMF/OVMF_VARS.fd \
+              /usr/share/edk2/ovmf/OVMF_VARS.fd; do
+        if [[ -f "$f" ]]; then cp "$f" /var/tmp/xfce-linux-qemu-live-vars.fd; OVMF_VARS=/var/tmp/xfce-linux-qemu-live-vars.fd; break; fi
+    done
+    [[ -z "$OVMF_CODE" ]] && { echo "OVMF firmware not found" >&2; exit 1; }
+
+    [[ -f "{{luks-qemu-disk}}" ]] || qemu-img create -f qcow2 "{{luks-qemu-disk}}" 64G
+    [[ -f "{{luks-scratch-disk}}" ]] || truncate -s 16G "{{luks-scratch-disk}}"
+    rm -f "{{luks-qemu-monitor-live}}" "{{luks-qemu-serial-live}}"
+
+    echo "Booting live ISO: $ISO"
+    # KVM access: try direct, then sudo, then fall back to TCG
+    QEMU_ACCEL="-accel kvm"
+    QEMU_PREFIX=""
+    if ! test -r /dev/kvm 2>/dev/null; then
+        if sudo test -r /dev/kvm 2>/dev/null; then
+            echo "Using sudo for KVM access"
+            QEMU_PREFIX="sudo"
+        else
+            echo "KVM not available, falling back to TCG emulation (slower)"
+            QEMU_ACCEL="-accel tcg,thread=multi"
+            QEMU_PREFIX=""
+        fi
+    fi
+    CPU_FLAG="-cpu host"
+    if [[ "$QEMU_ACCEL" =~ tcg ]]; then
+        CPU_FLAG="-cpu qemu64"
+    fi
+    $QEMU_PREFIX "$QEMU" \
+        -machine q35 $CPU_FLAG -m {{qemu-mem}} -smp {{qemu-smp}} $QEMU_ACCEL \
+        -drive "if=pflash,format=raw,readonly=on,file=${OVMF_CODE}" \
+        -drive "if=pflash,format=raw,file=${OVMF_VARS}" \
+        -drive "if=none,id=iso,file=${ISO},media=cdrom,readonly=on,format=raw" \
+        -device virtio-scsi-pci,id=scsi \
+        -device scsi-cd,drive=iso \
+        -drive "if=none,id=disk,file={{luks-qemu-disk}},format=qcow2" \
+        -device virtio-blk-pci,drive=disk \
+        -drive "if=none,id=scratch,file={{luks-scratch-disk}},format=raw,cache=unsafe" \
+        -device virtio-blk-pci,drive=scratch \
+        -netdev "user,id=net0,hostfwd=tcp::{{luks-qemu-ssh-port}}-:22" \
+        -device virtio-net-pci,netdev=net0 \
+        -monitor "unix:{{luks-qemu-monitor-live}},server,nowait" \
+        -serial "file:{{luks-qemu-serial-live}}" \
+        -display none \
+        -daemonize
+    echo "Live QEMU started (monitor: {{luks-qemu-monitor-live}})"
+
+    SSH_OPTS="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR -o ConnectTimeout=5 -o PreferredAuthentications=password"
+    echo "Waiting for live environment on port {{luks-qemu-ssh-port}}..."
+    # Ready when the serial marker appears OR SSH connects (debug=1 builds).
+    for i in $(seq 1 60); do
+        if grep -q "XFCE_LINUX_LIVE_READY" "{{luks-qemu-serial-live}}" 2>/dev/null; then
+            echo "Live environment ready (serial marker seen)"
+            break
+        fi
+        if sshpass -p live ssh $SSH_OPTS liveuser@127.0.0.1 -p {{luks-qemu-ssh-port}} true 2>/dev/null; then
+            echo "Live environment ready (SSH connected)"
+            break
+        fi
+        [[ "$i" -eq 60 ]] && { echo "ERROR: live env not ready after 5m"; tail -30 "{{luks-qemu-serial-live}}" || true; exit 1; }
+        sleep 5
+    done
+
+    # Wait for the live boot GUI to render and stabilize before screenshotting
+    sudo python3 "{{target}}/src/luks-unlock.py" wait-live \
+        "{{luks-qemu-monitor-live}}" \
+        "/tmp/luks-screenshot-live.ppm" || true
+
+# Run fisherman LUKS install via SSH into the live QEMU VM.
+luks-install-qemu target:
+    ./scripts/luks-install-qemu.sh "{{target}}" "{{luks-passphrase}}" "{{luks-qemu-ssh-port}}" "{{luks-qemu-monitor-live}}" "{{fisher_repo}}"
+
+# Boot the installed disk in QEMU (no ISO). Called after luks-install-qemu.
+luks-boot-qemu-installed target:
+    #!/usr/bin/bash
+    set -euo pipefail
+    QEMU=$(command -v /usr/libexec/qemu-kvm /usr/bin/qemu-kvm \
+               /usr/bin/qemu-system-x86_64 2>/dev/null | head -1)
+    [[ -z "$QEMU" ]] && { echo "qemu-kvm / qemu-system-x86_64 not found" >&2; exit 1; }
+    OVMF_CODE=""; OVMF_VARS=""
+    for f in /usr/share/OVMF/OVMF_CODE_4M.fd /usr/share/OVMF/OVMF_CODE.fd \
+              /usr/share/edk2/ovmf/OVMF_CODE.fd /usr/share/ovmf/OVMF.fd; do
+        [[ -f "$f" ]] && { OVMF_CODE="$f"; break; }
+    done
+    for f in /usr/share/OVMF/OVMF_VARS_4M.fd /usr/share/OVMF/OVMF_VARS.fd \
+              /usr/share/edk2/ovmf/OVMF_VARS.fd; do
+        if [[ -f "$f" ]]; then cp "$f" /var/tmp/xfce-linux-qemu-installed-vars.fd; OVMF_VARS=/var/tmp/xfce-linux-qemu-installed-vars.fd; break; fi
+    done
+    [[ -z "$OVMF_CODE" ]] && { echo "OVMF firmware not found" >&2; exit 1; }
+
+    rm -f "{{luks-qemu-monitor-installed}}" "{{luks-qemu-serial-installed}}"
+
+    echo "Booting installed disk: {{luks-qemu-disk}}"
+    # Wait for the live QEMU holding this disk to exit before rebooting it.
+    DISK_PATTERN="$(echo '{{luks-qemu-disk}}' | sed 's/\./\\./g')"
+    for i in {1..15}; do
+        if ! sudo pgrep -f "qemu-system.*${DISK_PATTERN}" >/dev/null 2>&1; then
+            break
+        fi
+        echo "Waiting for live QEMU to exit (attempt $i)..."
+        sleep 2
+    done
+    QEMU_ACCEL="-accel kvm"
+    QEMU_PREFIX=""
+    if ! test -r /dev/kvm 2>/dev/null; then
+        if sudo test -r /dev/kvm 2>/dev/null; then
+            echo "Using sudo for KVM access"
+            QEMU_PREFIX="sudo"
+        else
+            echo "KVM not available, falling back to TCG emulation (slower)"
+            QEMU_ACCEL="-accel tcg,thread=multi"
+            QEMU_PREFIX=""
+        fi
+    fi
+    CPU_FLAG="-cpu host"
+    if [[ "$QEMU_ACCEL" =~ tcg ]]; then
+        CPU_FLAG="-cpu qemu64"
+    fi
+    $QEMU_PREFIX "$QEMU" \
+        -machine q35 $CPU_FLAG -m {{qemu-mem}} -smp {{qemu-smp}} $QEMU_ACCEL \
+        -drive "if=pflash,format=raw,readonly=on,file=${OVMF_CODE}" \
+        -drive "if=pflash,format=raw,file=${OVMF_VARS}" \
+        -drive "if=none,id=disk,file={{luks-qemu-disk}},format=qcow2" \
+        -device virtio-blk-pci,drive=disk \
+        -netdev user,id=net0 \
+        -device virtio-net-pci,netdev=net0 \
+        -monitor "unix:{{luks-qemu-monitor-installed}},server,nowait" \
+        -serial "file:{{luks-qemu-serial-installed}}" \
+        -display none \
+        -daemonize
+    echo "Installed QEMU started (monitor: {{luks-qemu-monitor-installed}})"
+
+    for i in $(seq 1 15); do
+        [[ -S "{{luks-qemu-monitor-installed}}" ]] && break
+        sleep 2
+    done
+
+# Send LUKS passphrase to installed QEMU VM via monitor screendump + sendkey.
+# Polls screendump size to detect Plymouth takeover, then injects keystrokes.
+luks-unlock-qemu target:
+    #!/usr/bin/bash
+    set -euo pipefail
+    PASSPHRASE="{{luks-passphrase}}"
+    echo "Unlocking LUKS on installed QEMU VM..."
+    sudo python3 "{{target}}/src/luks-unlock.py" qemu \
+        "{{luks-qemu-monitor-installed}}" \
+        "$PASSPHRASE" \
+        "{{luks-qemu-serial-installed}}"
+
+    # Show key screenshots inline for terminals that support it (Kitty, iTerm2)
+    bash "{{target}}/src/show-screenshot.sh" /tmp/luks-screenshot-plymouth.ppm "Plymouth prompt" || true
+    bash "{{target}}/src/show-screenshot.sh" /tmp/luks-screenshot-final.ppm "Final boot" || true
