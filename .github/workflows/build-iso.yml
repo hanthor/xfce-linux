@@ -79,7 +79,7 @@ jobs:
         run: |
           df -h /
           sudo mkdir -p /var/iso-build
-          sudo $(command -v just) installer_channel=stable output_dir=/var/iso-build iso-sd-boot xfce-linux
+          sudo "$(command -v just)" installer_channel=stable output_dir=/var/iso-build iso-sd-boot xfce-linux
           mkdir -p output
           sudo cp /var/iso-build/*.iso output/ 2>/dev/null || true
           sudo chown -R "$USER:$(id -gn)" output/
