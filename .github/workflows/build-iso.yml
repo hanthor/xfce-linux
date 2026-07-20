@@ -5,10 +5,14 @@ on:
     branches: [main]
     paths:
       - 'xfce-linux/**'
-      - 'justfile'
+      - 'Justfile'
+      - 'iso.justfile'
       - '.github/workflows/build-iso.yml'
-  schedule:
-    - cron: '0 4 * * *'
+  workflow_run:
+    # Rebuild the ISO whenever a fresh OCI image lands on GHCR.
+    workflows: ["Build xfce-linux (Multi-Runner)"]
+    types: [completed]
+    branches: [main, stable]
   workflow_dispatch:
     inputs:
       skip_upload:
@@ -28,14 +32,43 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Determine channel
+        id: channel
+        run: |
+          BRANCH="${{ github.event.workflow_run.head_branch || github.ref_name }}"
+          if [ "$BRANCH" = "stable" ]; then
+            echo "name=stable" >> "$GITHUB_OUTPUT"
+            echo "payload_tag=stable" >> "$GITHUB_OUTPUT"
+            echo "r2_prefix=xfce-linux/stable" >> "$GITHUB_OUTPUT"
+          else
+            echo "name=nightly" >> "$GITHUB_OUTPUT"
+            echo "payload_tag=latest" >> "$GITHUB_OUTPUT"
+            echo "r2_prefix=xfce-linux" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Point ISO payload at channel image
+        run: echo "ghcr.io/tuna-os/xfce-linux:${{ steps.channel.outputs.payload_tag }}" > xfce-linux/payload_ref
 
       - name: Free disk space
+        # Must run before Setup Just: tool-cache:true wipes the runner tool
+        # cache, which deletes the just binary setup-just just installed.
         uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
         with:
           tool-cache: true
 
+      - name: Setup Just
+        uses: extractions/setup-just@v4
+
+      - name: Expose just to sudo/root
+        # Recipes call `just` recursively and run under sudo; root's
+        # secure_path won't see the runner tool cache.
+        run: sudo ln -sf "$(command -v just)" /usr/local/bin/just
+
       - name: Install dependencies
-        run: sudo apt-get update -qq && sudo apt-get install -y just podman buildah rclone mtools xorriso skopeo
+        run: sudo apt-get update -qq && sudo apt-get install -y podman buildah rclone mtools xorriso skopeo
 
       - name: Log in to GHCR
         run: echo "${{ env.GITHUB_TOKEN }}" | sudo podman login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -46,7 +79,7 @@ jobs:
         run: |
           df -h /
           sudo mkdir -p /var/iso-build
-          sudo $(command -v just) installer_channel=stable output_dir=/var/iso-build iso-sd-boot xfce-linux
+          sudo "$(command -v just)" installer_channel=stable output_dir=/var/iso-build iso-sd-boot xfce-linux
           mkdir -p output
           sudo cp /var/iso-build/*.iso output/ 2>/dev/null || true
           sudo chown -R "$USER:$(id -gn)" output/
@@ -82,10 +115,10 @@ jobs:
         run: |
           ISO="${{ steps.iso.outputs.path }}"
           DATED="${{ steps.iso.outputs.dated }}"
-          rclone copyto --log-level INFO --checksum --s3-no-check-bucket "$ISO" "R2:${R2_BUCKET}/xfce-linux/${DATED}"
-          rclone copyto --log-level INFO --s3-no-check-bucket "$ISO" "R2:${R2_BUCKET}/xfce-linux/xfce-linux-live-latest.iso"
+          rclone copyto --log-level INFO --checksum --s3-no-check-bucket "$ISO" "R2:${R2_BUCKET}/${{ steps.channel.outputs.r2_prefix }}/${DATED}"
+          rclone copyto --log-level INFO --s3-no-check-bucket "$ISO" "R2:${R2_BUCKET}/${{ steps.channel.outputs.r2_prefix }}/xfce-linux-live-latest.iso"
           rclone copyto --log-level INFO --s3-no-check-bucket \
-            "${{ steps.checksum.outputs.path }}" "R2:${R2_BUCKET}/xfce-linux/${{ steps.checksum.outputs.name }}"
+            "${{ steps.checksum.outputs.path }}" "R2:${R2_BUCKET}/${{ steps.channel.outputs.r2_prefix }}/${{ steps.checksum.outputs.name }}"
         continue-on-error: true
 
       - name: Boot verification (UEFI + serial)

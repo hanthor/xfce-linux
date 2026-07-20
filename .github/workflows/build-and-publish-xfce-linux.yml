@@ -1,7 +1,8 @@
 name: Build xfce-linux
 
-# Mirrors the tromso CASD pattern: runs bst2 inside a container on the runner,
-# exports the OCI image, and pushes to ghcr.io/tuna-os/xfce-linux.
+# Single-runner fallback build (manual dispatch only — scheduled and push
+# builds run through build-multirunner.yml, which splits the build across
+# free runners). Useful with a self-hosted runner via ACTIONS_RUNNER_LABEL.
 
 on:
   workflow_dispatch:
@@ -10,24 +11,12 @@ on:
         description: 'Push OCI image to GHCR'
         type: boolean
         default: true
-  schedule:
-    # Daily at 05:00 UTC
-    - cron: '0 5 * * *'
-  push:
-    branches: [main]
-    paths:
-      - 'elements/**'
-      - 'files/**'
-      - 'patches/**'
-      - 'include/**'
-      - 'project.conf'
-      - '.github/workflows/build-and-publish-xfce-linux.yml'
 
 env:
   IMAGE_NAME: xfce-linux
   IMAGE_REGISTRY: ghcr.io/${{ github.repository_owner }}
   BST_TARGET: oci/xfce-linux.bst
-  BST2_IMAGE: registry.gitlab.com/freedesktop-sdk/infrastructure/freedesktop-sdk-docker-images/bst2:latest
+  BST2_IMAGE: registry.gitlab.com/freedesktop-sdk/infrastructure/freedesktop-sdk-docker-images/bst2:64eb0b4930d57a92710822898fb73af6cc1ae35d
 
 concurrency:
   group: casd-xfce-linux-${{ github.ref }}

@@ -18,7 +18,7 @@ build-depends:
 sources:
 - kind: git_repo
   url: https://gitlab.xfce.org/xfce/libxfce4util.git
-  track: master
+  track: libxfce4util-[0-9]*
   ref: libxfce4util-4.20.1-17-gcd33da2e55357a0571553572cccc3c0cb5d21004
 
 config:

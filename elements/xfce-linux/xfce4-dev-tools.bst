@@ -21,7 +21,7 @@ build-depends:
 sources:
 - kind: git_repo
   url: https://gitlab.xfce.org/xfce/xfce4-dev-tools.git
-  track: master
+  track: xfce4-dev-tools-[0-9]*
   ref: xfce4-dev-tools-4.21.0-10-g5b5dc8345eb6135480a2c9840e73884141649182
 
 config:

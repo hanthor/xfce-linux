@@ -1,3 +1,6 @@
+# ISO/live/e2e recipes live in iso.justfile (kept separate for readability)
+import "iso.justfile"
+
 # List available commands
 [group('info')]
 default:
