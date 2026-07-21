@@ -95,6 +95,7 @@ desktop) are published to the `ci-screenshots` branch and PR comments.
 | 2026-07-19 | Failed chunks could publish their exact-cache-key tag and be skipped forever | `for i in 1 2 3 … done` retry loop exits 0 on total failure (status of last `sleep`) | retry loop removed (bst retry-failed/network-retries already cover it); rc propagated |
 
 | 2026-07-19 | LUKS e2e / ISO jobs die in seconds: "Unknown attribute `group`" at Justfile:5 | Ubuntu 24.04 apt ships just 1.21 (predates `[group()]`); old runs survived because ancient just silently picked the group-free lowercase justfile we removed | workflows install just via extractions/setup-just and invoke `sudo "$(command -v just)"` |
+| 2026-07-21 | Superseded push checks and image/ISO builds remained queued for hours | high-frequency workflows lacked concurrency groups or explicitly queued stale same-ref work | same-ref concurrency groups now cancel superseded runs; `test_high_frequency_workflows_cancel_superseded_runs` prevents regression |
 
 Keep appending to this table while iterating on CI (see the org `ci-fix-loop`
 skill; format proven in tuna-os/tunaos `docs/ci-troubleshooting.md`).

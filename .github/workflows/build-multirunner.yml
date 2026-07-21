@@ -38,8 +38,8 @@ env:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  # Long builds must never be cancelled by the next schedule/push — queue instead.
-  cancel-in-progress: false
+  # Newer work for the same branch supersedes stale scheduled/push builds.
+  cancel-in-progress: true
 
 jobs:
   # ── Phase 1: Plan ────────────────────────────────────────────────────
