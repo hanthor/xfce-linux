@@ -113,3 +113,8 @@ def test_high_frequency_workflows_cancel_superseded_runs():
         assert re.search(
             r"cancel-in-progress:\s*true", text
         ), f"{name} queues superseded same-ref runs"
+
+    iso = (workflows / "build-iso.yml").read_text()
+    assert "github.event.workflow_run.head_branch || github.ref_name" in iso, (
+        "push and workflow_run ISO triggers must normalize to the same branch key"
+    )
