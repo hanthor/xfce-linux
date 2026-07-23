@@ -55,9 +55,12 @@ config:
     install -m 0755 greetd/target/release/agreety "%{install-root}/usr/bin/agreety"
     install -m 0644 greetd/greetd.service "%{install-root}/usr/lib/systemd/system/greetd.service"
 
-    # initial_session launches regreet under cage; falls back to agreety
-    # (agetty-lookalike) if either is missing, so a broken greeter doesn't
-    # brick the seat. Not activated by default — see element description.
+    # NOT FUNCTIONAL YET: this launches regreet under `cage`, which this
+    # repo doesn't package (cage needs wlroots, unavailable in
+    # freedesktop-sdk or gnome-build-meta — see deps.bst's comment). Kept
+    # as the intended config rather than something bogus, since greetd.service
+    # ships disabled and nothing exercises this file yet — but don't expect
+    # it to actually start a session until a compositor is sorted out.
     cat > "%{install-root}%{sysconfdir}/greetd/config.toml" <<'EOF'
     [terminal]
     vt = 1

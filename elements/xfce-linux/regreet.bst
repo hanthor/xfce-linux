@@ -1,8 +1,11 @@
 kind: manual
 description: |
   regreet — GTK4 greeter for greetd, themed for XFCE Linux (ADR 0001,
-  tuna-os/xfce-linux#39). Runs under cage (xfce-linux/cage.bst) until
-  xfwl4 can host it directly.
+  tuna-os/xfce-linux#39). Meant to run under cage until xfwl4 can host it
+  directly, per the ADR — but this repo doesn't package cage yet (it
+  needs wlroots, unavailable in freedesktop-sdk/gnome-build-meta; see
+  deps.bst). This element builds and installs the binary regardless,
+  since it's independently useful to have ready, but nothing launches it.
 
 depends:
 - freedesktop-sdk.bst:public-stacks/runtime-minimal.bst
