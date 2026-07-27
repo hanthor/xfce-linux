@@ -58,7 +58,7 @@ jobs:
   build_final:
     needs: multirunner
     if: always() && !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled')
-    runs-on: ubuntu-24.04
+    runs-on: runs-on=${{ github.run_id }}/runner=build-amd64
     timeout-minutes: 360
     permissions:
       contents: read
