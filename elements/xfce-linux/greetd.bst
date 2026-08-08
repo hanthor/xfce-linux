@@ -23,7 +23,7 @@ sources:
   ref: f3f32498851c6775a9d9ca0d46239b9a6de78204
   directory: greetd
 - kind: cargo2
-  path: greetd/Cargo.lock
+  lock: greetd/Cargo.lock
   ref:
   - kind: registry
     name: async-trait

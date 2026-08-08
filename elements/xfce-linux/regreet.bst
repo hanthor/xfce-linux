@@ -21,7 +21,7 @@ sources:
   ref: 290e6f8d65b7034c5b63bc950a20bcf8277ebe5f
   directory: regreet
 - kind: cargo2
-  path: regreet/Cargo.lock
+  lock: regreet/Cargo.lock
   ref:
   - kind: registry
     name: adler2
