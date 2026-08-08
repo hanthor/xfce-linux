@@ -53,6 +53,46 @@ jobs:
       bst_target: oci/xfce-linux.bst
       num_chunks: ${{ inputs.num_chunks || '10' }}
       core_split: "200"
+      # Elements that several chunks each rebuilt from scratch in run
+      # 31228685898, with the measured cost of one build and how many of the
+      # ten chunks paid it. Building them in core instead puts them in the
+      # shared core CAS that every chunk restores, so they are built once.
+      #
+      #   webkit2gtk-4.1   252 min x 3 chunks   (93% of a chunk's 270 min budget)
+      #   webkitgtk-6.0    unfinished on 2 chunks when they hit the budget
+      #   llvm             125 min x 4 chunks
+      #   rust              37 min x 4 chunks
+      #   mozjs             14 min x 2 chunks
+      #   cargo-c           13 min x 4 chunks
+      #   glycin            13 min x 2 chunks
+      #   samba             12 min x 2 chunks
+      #   gdb               11 min x 2 chunks
+      #
+      # mesa's private LLVM is a second full LLVM build that no chunk got far
+      # enough to reach; it is here so it is never paid ten times over.
+      #
+      # Naming an element builds its whole transitive closure, so this list is
+      # the shared spine, not just these leaves. It does not change the chunk
+      # matrix — chunk names and cache keys still come from core_split alone,
+      # so the warm GHCR chunk caches survive this change.
+      extra_core_targets: >-
+        gnome-build-meta.bst:sdk/webkit2gtk-4.1.bst
+        gnome-build-meta.bst:sdk/webkitgtk-6.0.bst
+        freedesktop-sdk.bst:components/llvm.bst
+        freedesktop-sdk.bst:components/rust.bst
+        freedesktop-sdk.bst:extensions/mesa/llvm.bst
+        gnome-build-meta.bst:sdk/mozjs.bst
+        freedesktop-sdk.bst:components/cargo-c.bst
+        gnome-build-meta.bst:sdk/glycin.bst
+        gnome-build-meta.bst:core-deps/samba.bst
+        freedesktop-sdk.bst:components/gdb.bst
+      # That spine is ~14 h of serial work at 2 cores, so core will exhaust its
+      # budget for the first few runs. Its CAS is pushed regardless (the push
+      # step is if: always()), so each run resumes where the last stopped and
+      # the chunks get a progressively warmer core cache meanwhile. Only the
+      # budget timeout is tolerated — a real build error still fails core.
+      core_budget_minutes: "300"
+      soft_core_budget: true
 
   # ── Phase 4: Final assembly + push ──────────────────────────────────
   build_final:
