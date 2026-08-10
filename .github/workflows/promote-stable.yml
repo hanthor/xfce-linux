@@ -40,32 +40,47 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          check() {
+          get_latest_run() {
             local wf="$1"
-            local run
-            run=$(gh run list --workflow "$wf" --branch main --limit 10 \
-                    --json conclusion,status,headSha \
-                    --jq '[.[] | select(.status == "completed")][0]')
-            [ -n "$run" ] || { echo "no completed runs of $wf"; return 1; }
-            local concl sha
-            concl=$(echo "$run" | jq -r .conclusion)
-            sha=$(echo "$run" | jq -r .headSha)
-            echo "$wf: $concl @ $sha"
-            [ "$concl" = "success" ] || return 1
-            echo "$sha"
+            gh run list --workflow "$wf" --branch main --limit 5 \
+              --json status,conclusion,headSha \
+              --jq '.[0]'
           }
-          set +e
-          BUILD_SHA=$(check "Build xfce-linux (Multi-Runner)" | tail -1)
-          BUILD_OK=$?
-          ISO_OK=1
-          check "Build and Publish xfce-linux Live ISO" >/dev/null && ISO_OK=0
-          set -e
-          if [ $BUILD_OK -ne 0 ] || [ $ISO_OK -ne 0 ]; then
+
+          BUILD_RUN=$(get_latest_run "Build xfce-linux (Multi-Runner)")
+          ISO_RUN=$(get_latest_run "Build and Publish xfce-linux Live ISO")
+
+          BUILD_STATUS=$(echo "$BUILD_RUN" | jq -r '.status // "none"')
+          BUILD_CONCL=$(echo "$BUILD_RUN" | jq -r '.conclusion // "none"')
+          BUILD_SHA=$(echo "$BUILD_RUN" | jq -r '.headSha // "none"')
+
+          ISO_STATUS=$(echo "$ISO_RUN" | jq -r '.status // "none"')
+          ISO_CONCL=$(echo "$ISO_RUN" | jq -r '.conclusion // "none"')
+          ISO_SHA=$(echo "$ISO_RUN" | jq -r '.headSha // "none"')
+
+          echo "Build run: status=$BUILD_STATUS conclusion=$BUILD_CONCL sha=$BUILD_SHA"
+          echo "ISO run:   status=$ISO_STATUS conclusion=$ISO_CONCL sha=$ISO_SHA"
+
+          CHECK_OK=0
+          if [ "$BUILD_STATUS" != "completed" ] || [ "$BUILD_CONCL" != "success" ]; then
+            echo "Latest Build run is not completed & successful"
+            CHECK_OK=1
+          fi
+          if [ "$ISO_STATUS" != "completed" ] || [ "$ISO_CONCL" != "success" ]; then
+            echo "Latest ISO run is not completed & successful"
+            CHECK_OK=1
+          fi
+          if [ "$BUILD_SHA" = "none" ] || [ "$BUILD_SHA" != "$ISO_SHA" ]; then
+            echo "Build SHA ($BUILD_SHA) and ISO SHA ($ISO_SHA) do not match"
+            CHECK_OK=1
+          fi
+
+          if [ $CHECK_OK -ne 0 ]; then
             if [ "${{ inputs.force }}" = "true" ]; then
               echo "Health checks failed but force=true — promoting HEAD of main."
               BUILD_SHA=$(git rev-parse origin/main)
             else
-              echo "::error::Health checks failed (build ok=$BUILD_OK, iso ok=$ISO_OK); not promoting. Use force=true to override."
+              echo "::error::Health checks failed (build=$BUILD_CONCL, iso=$ISO_CONCL, build_sha=$BUILD_SHA, iso_sha=$ISO_SHA); not promoting. Use force=true to override."
               exit 1
             fi
           fi
