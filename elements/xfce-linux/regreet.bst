@@ -32,10 +32,10 @@ config:
     cd regreet
     export PKG_CONFIG_PATH="/usr/lib64/pkgconfig:/usr/lib/pkgconfig:/usr/share/pkgconfig"
     export RUSTFLAGS="-C relocation-model=pic"
-    # UNVERIFIED: same --offline --frozen caveat as greetd.bst and
-    # xfwl4-src.bst — regreet's Cargo.lock isn't vendored in-tree, and
-    # this has never been exercised against a real (network-less)
-    # BuildStream sandbox this session.
+    # UNVERIFIED: same --offline --frozen caveat as greetd.bst —
+    # regreet's Cargo.lock isn't vendored in-tree, and this has never
+    # been exercised against a real (network-less) BuildStream sandbox
+    # this session.
     cargo build --release --offline --frozen
 
   install-commands:

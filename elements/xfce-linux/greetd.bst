@@ -31,12 +31,11 @@ config:
     export RUSTFLAGS="-C relocation-model=pic"
     # UNVERIFIED: greetd's Cargo.lock isn't vendored in-tree (no vendor/ dir,
     # no .cargo/config.toml at the pinned ref — checked directly against the
-    # upstream repo). This --offline --frozen invocation mirrors xfwl4-src.bst's
-    # existing pattern in this repo, but that pattern's own success has never
-    # been confirmed by a completed build either (the multi-runner pipeline
-    # hasn't finished an x86_64 build this session, let alone reached this
-    # element). If this fails on crate resolution, a cargo-sources vendoring
-    # element needs to land ahead of this one — see tuna-os/xfce-linux#39.
+    # upstream repo). The --offline --frozen pattern has never been confirmed
+    # by a completed build (the multi-runner pipeline hasn't finished an
+    # x86_64 build this session, let alone reached this element). If this
+    # fails on crate resolution, a cargo-sources vendoring element needs to
+    # land ahead of this one — see tuna-os/xfce-linux#39.
     cargo build --release --offline --frozen --workspace --exclude fakegreet
 
   install-commands:
