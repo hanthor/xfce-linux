@@ -35,52 +35,48 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Health check — latest nightly build + ISO green on main
+      - name: Health check — latest nightly build + matching ISO green on main
         id: health
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          get_latest_run() {
+          # Check the newest run, including in-progress runs. Looking only at
+          # completed runs can promote an older green commit while a newer
+          # nightly is still running. The ISO must also be green for the same
+          # commit: the ISO workflow is triggered by the image build, but a
+          # stale successful ISO must never satisfy this release gate.
+          check() {
             local wf="$1"
-            gh run list --workflow "$wf" --branch main --limit 5 \
-              --json status,conclusion,headSha \
-              --jq '.[0]'
+            local run
+            run=$(gh run list --workflow "$wf" --branch main --limit 20 \
+                    --json conclusion,status,headSha \
+                    --jq '.[0] // empty')
+            [ -n "$run" ] || { echo "no runs of $wf" >&2; return 1; }
+            local status concl sha
+            status=$(echo "$run" | jq -r .status)
+            concl=$(echo "$run" | jq -r .conclusion)
+            sha=$(echo "$run" | jq -r .headSha)
+            echo "$wf: $status/$concl @ $sha" >&2
+            [ "$status" = "completed" ] && [ "$concl" = "success" ] || return 1
+            echo "$sha"
           }
-
-          BUILD_RUN=$(get_latest_run "Build xfce-linux (Multi-Runner)")
-          ISO_RUN=$(get_latest_run "Build and Publish xfce-linux Live ISO")
-
-          BUILD_STATUS=$(echo "$BUILD_RUN" | jq -r '.status // "none"')
-          BUILD_CONCL=$(echo "$BUILD_RUN" | jq -r '.conclusion // "none"')
-          BUILD_SHA=$(echo "$BUILD_RUN" | jq -r '.headSha // "none"')
-
-          ISO_STATUS=$(echo "$ISO_RUN" | jq -r '.status // "none"')
-          ISO_CONCL=$(echo "$ISO_RUN" | jq -r '.conclusion // "none"')
-          ISO_SHA=$(echo "$ISO_RUN" | jq -r '.headSha // "none"')
-
-          echo "Build run: status=$BUILD_STATUS conclusion=$BUILD_CONCL sha=$BUILD_SHA"
-          echo "ISO run:   status=$ISO_STATUS conclusion=$ISO_CONCL sha=$ISO_SHA"
-
-          CHECK_OK=0
-          if [ "$BUILD_STATUS" != "completed" ] || [ "$BUILD_CONCL" != "success" ]; then
-            echo "Latest Build run is not completed & successful"
-            CHECK_OK=1
+          set +e
+          BUILD_SHA=$(check "Build xfce-linux (Multi-Runner)")
+          BUILD_OK=$?
+          ISO_SHA=$(check "Build and Publish xfce-linux Live ISO")
+          ISO_OK=$?
+          set -e
+          MATCH_OK=0
+          if [ $BUILD_OK -eq 0 ] && [ $ISO_OK -eq 0 ] && [ "$BUILD_SHA" != "$ISO_SHA" ]; then
+            echo "::error::Nightly build and ISO succeeded for different commits: build=$BUILD_SHA iso=$ISO_SHA"
+            MATCH_OK=1
           fi
-          if [ "$ISO_STATUS" != "completed" ] || [ "$ISO_CONCL" != "success" ]; then
-            echo "Latest ISO run is not completed & successful"
-            CHECK_OK=1
-          fi
-          if [ "$BUILD_SHA" = "none" ] || [ "$BUILD_SHA" != "$ISO_SHA" ]; then
-            echo "Build SHA ($BUILD_SHA) and ISO SHA ($ISO_SHA) do not match"
-            CHECK_OK=1
-          fi
-
-          if [ $CHECK_OK -ne 0 ]; then
+          if [ $BUILD_OK -ne 0 ] || [ $ISO_OK -ne 0 ] || [ $MATCH_OK -ne 0 ]; then
             if [ "${{ inputs.force }}" = "true" ]; then
               echo "Health checks failed but force=true — promoting HEAD of main."
               BUILD_SHA=$(git rev-parse origin/main)
             else
-              echo "::error::Health checks failed (build=$BUILD_CONCL, iso=$ISO_CONCL, build_sha=$BUILD_SHA, iso_sha=$ISO_SHA); not promoting. Use force=true to override."
+              echo "::error::Health checks failed (build ok=$BUILD_OK, iso ok=$ISO_OK, matching SHA ok=$((1 - MATCH_OK))); not promoting. Use force=true to override."
               exit 1
             fi
           fi
