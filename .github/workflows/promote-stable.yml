@@ -67,9 +67,11 @@ jobs:
           BUILD_OK=$?
           ISO_SHA=$(check "Build and Publish xfce-linux Live ISO")
           ISO_OK=$?
-          PLAIN_SHA=$(check "Plain Install End-to-End Test")
+          # The install E2E workflows only have to be green; their SHA is not
+          # part of the promotion identity, so discard it.
+          check "Plain Install End-to-End Test" >/dev/null
           PLAIN_OK=$?
-          LUKS_SHA=$(check "LUKS Install End-to-End Test")
+          check "LUKS Install End-to-End Test" >/dev/null
           LUKS_OK=$?
           set -e
           MATCH_OK=0
@@ -123,9 +125,10 @@ jobs:
             local workflow="$1"
             local run status conclusion
             for _ in $(seq 1 720); do
-              run=$(gh run list --workflow "$workflow" --branch stable --limit 20 \
-                --json databaseId,status,conclusion,headSha \
-                --jq --arg sha "$SHA" '[.[] | select(.headSha == $sha)][0] // empty')
+              run=$(gh run list --workflow "$workflow" --branch stable \
+                --commit "$SHA" --limit 20 \
+                --json status,conclusion \
+                --jq '.[0] // empty')
               if [ -n "$run" ]; then
                 status=$(echo "$run" | jq -r .status)
                 conclusion=$(echo "$run" | jq -r .conclusion)
