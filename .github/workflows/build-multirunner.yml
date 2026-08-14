@@ -75,6 +75,22 @@ jobs:
       # the shared spine, not just these leaves. It does not change the chunk
       # matrix — chunk names and cache keys still come from core_split alone,
       # so the warm GHCR chunk caches survive this change.
+      #
+      # qemu/libvirt added 2026-08-14 (#95): run 31653236292's planning-phase
+      # matrix (multirunner / planning job log) assigns
+      # gnome-build-meta.bst:core-deps/qemu.bst as a named leaf target of
+      # chunk3-popt and gnome-build-meta.bst:core-deps/libvirt.bst of
+      # chunk5-pwquality — those are 2 of the 4 chunks that hard-failed that
+      # run at exactly the 270-minute chunk build budget (signal 15, exit
+      # 124; chunks have no soft-budget option the way core does, so hitting
+      # the budget is a hard failure, not a warning). I could not get a
+      # precise per-element minute count the way the entries above have one
+      # (no live BuildStream environment to profile with) — this is a
+      # correlation (their owning chunks are 2 of the 4 that timed out), not
+      # a proven single cause, and it will not by itself fix chunk4-cracklib
+      # or chunk7-cryptsetup-base, which hit the same budget without an
+      # equally obvious single heavy leaf target in their list. Flagging
+      # that honestly rather than presenting this as a full fix.
       extra_core_targets: >-
         gnome-build-meta.bst:sdk/webkit2gtk-4.1.bst
         gnome-build-meta.bst:sdk/webkitgtk-6.0.bst
@@ -86,6 +102,8 @@ jobs:
         gnome-build-meta.bst:sdk/glycin.bst
         gnome-build-meta.bst:core-deps/samba.bst
         freedesktop-sdk.bst:components/gdb.bst
+        gnome-build-meta.bst:core-deps/qemu.bst
+        gnome-build-meta.bst:core-deps/libvirt.bst
       # That spine is ~14 h of serial work at 2 cores, so core will exhaust its
       # budget for the first few runs. Its CAS is pushed regardless (the push
       # step is if: always()), so each run resumes where the last stopped and
