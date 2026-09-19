@@ -39,4 +39,6 @@ def test_junctions_match_the_shared_remote_cache_baseline():
         in FREEDESKTOP_JUNCTION
     )
     assert "50.4-0-g8524013485013dd5616bfff02dbeab274d5a4553" in GNOME_JUNCTION
-    assert "patches/gnome-build-meta" not in GNOME_JUNCTION
+    assert (REPO / "patches/gnome-build-meta/4289.patch").is_file()
+    assert not (REPO / "patches/gnome-build-meta/disable-lorry-mirrors.patch").exists()
+    assert not (REPO / "patches/gnome-build-meta/remove-ibus-libpinyin.patch").exists()
