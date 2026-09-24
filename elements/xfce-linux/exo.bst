@@ -5,7 +5,6 @@ description: |
 build-depends:
 - freedesktop-sdk.bst:public-stacks/buildsystem-autotools.bst
 - freedesktop-sdk.bst:components/gettext.bst
-- freedesktop-sdk.bst:components/perl-uri.bst
 - xfce-linux/intltool.bst
 - xfce-linux/xfce4-dev-tools.bst
 
