@@ -20,9 +20,9 @@ depends:
 - freedesktop-sdk.bst:components/libdisplay-info.bst
 - freedesktop-sdk.bst:components/systemd.bst
 - freedesktop-sdk.bst:components/pixman.bst
-- freedesktop-sdk.bst:components/xorg-lib-xkbcommon.bst
+- freedesktop-sdk.bst:components/libxkbcommon.bst
 - freedesktop-sdk.bst:components/xorg-lib-xcb.bst
-- freedesktop-sdk.bst:components/xorg-server-xwayland.bst
+- freedesktop-sdk.bst:components/xwayland.bst
 - xfce-linux/libxfce4util.bst
 - xfce-linux/libxfce4ui.bst
 - xfce-linux/xfconf.bst
@@ -41,6 +41,9 @@ sources:
   ref: 55dbf3e3d2a91b525c528c0dd4c1a7805a99364b
   directory: xfwl4/resources/xfce-wayland-protocols
 - kind: cargo2
+  url: crates:crates
+  git-mirrors:
+    https://github.com/: 'github:'
   cargo-lock: xfwl4/Cargo.lock
   ref:
   - kind: git
