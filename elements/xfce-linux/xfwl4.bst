@@ -49,12 +49,12 @@ sources:
   - kind: git
     name: smithay
     version: 0.7.0
-    repo: https://github.com/smithay/smithay
+    repo: github:smithay/smithay
     commit: 0a29aecf9e07a2227712ab470b0ab0ee56752272
   - kind: git
     name: smithay-drm-extras
     version: 0.1.0
-    repo: https://github.com/smithay/smithay
+    repo: github:smithay/smithay
     commit: 0a29aecf9e07a2227712ab470b0ab0ee56752272
   - kind: registry
     name: adler2
