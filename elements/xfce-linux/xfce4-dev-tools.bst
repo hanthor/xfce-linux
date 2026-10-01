@@ -6,6 +6,8 @@ description: |
 build-depends:
 - freedesktop-sdk.bst:public-stacks/buildsystem-autotools.bst
 - freedesktop-sdk.bst:components/glib.bst
+# configure hard-requires xsltproc to build the xdt-csource man page.
+- freedesktop-sdk.bst:components/libxslt.bst
 
 depends:
 - freedesktop-sdk.bst:public-stacks/runtime-minimal.bst
