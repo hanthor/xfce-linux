@@ -26,3 +26,9 @@ sources:
   url: xfce:xfce/xfdesktop.git
   track: xfdesktop-*
   ref: xfdesktop-4.21.0-0-g1c491868ca45092b6816ea5a9272f2ae6d2d788a
+
+# video-backdrop needs gstreamer's gtk sink (gst-plugin-gtk), which neither
+# junction builds; meson stops with "gstreamer cannot find gst-plugin-gtk".
+variables:
+  meson-local: >-
+    -Dvideo-backdrop=false

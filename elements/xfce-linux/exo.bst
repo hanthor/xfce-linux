@@ -16,12 +16,12 @@ depends:
 - xfce-linux/libxfce4ui.bst
 
 sources:
-- kind: git_repo
-  url: xfce:xfce/exo.git
-  track: exo-*
-  ref: exo-4.21.0-0-g4a0f43606076efa3e9b50b1f59cf11aa2c9b41ac
+# Release tarball, not the git tag: from git, xdt-autogen refuses to run
+# without gtk-doc installed ("You must have gtk-doc installed"), which no
+# junction element here provides. The tarball ships configure.
+- kind: tar
+  url: xfce_archive:src/xfce/exo/4.21/exo-4.21.0.tar.bz2
+  ref: 26f85ca2db3bcf99d8b8af28b0d565b0186ccc3d2ed4a5ba315f6a589b8bc2c9
 
-config:
-  configure-commands:
-  - ./autogen.sh
-  - ./configure --prefix=/usr --disable-gtk-doc
+variables:
+  conf-local: --disable-gtk-doc
