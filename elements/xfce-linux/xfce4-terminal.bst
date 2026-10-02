@@ -26,3 +26,7 @@ sources:
   url: xfce:apps/xfce4-terminal.git
   track: xfce4-terminal-*
   ref: xfce4-terminal-1.2.0-0-gbcc92696a1526b85875f03c21b265bd376bce00d
+# 1.2.0 fails to build without gtk-layer-shell (which neither junction
+# ships); fixed upstream on master. Drop when tracking the next release.
+- kind: patch
+  path: patches/xfce4-terminal/0001-dropdown-guard-layer-shell-idle-sources.patch
