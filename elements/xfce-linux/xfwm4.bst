@@ -21,9 +21,12 @@ depends:
 - freedesktop-sdk.bst:components/xorg-lib-xdamage.bst
 - freedesktop-sdk.bst:components/xorg-lib-xfixes.bst
 - freedesktop-sdk.bst:components/xorg-lib-xrender.bst
+- freedesktop-sdk.bst:components/xorg-lib-xi.bst
+- freedesktop-sdk.bst:components/xorg-lib-xext.bst
 - xfce-linux/libxfce4util.bst
 - xfce-linux/libxfce4ui.bst
 - xfce-linux/xfconf.bst
+- xfce-linux/libwnck.bst
 
 sources:
 - kind: git_repo

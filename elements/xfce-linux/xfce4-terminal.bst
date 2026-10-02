@@ -12,7 +12,7 @@ depends:
 - freedesktop-sdk.bst:components/gtk3.bst
 - freedesktop-sdk.bst:components/glib.bst
 - freedesktop-sdk.bst:components/xorg-lib-x11.bst
-- gnome-build-meta.bst:core-deps/vte.bst
+- xfce-linux/vte-gtk3.bst
 - xfce-linux/libxfce4util.bst
 - xfce-linux/libxfce4ui.bst
 - xfce-linux/xfconf.bst
