@@ -30,3 +30,8 @@ sources:
   url: xfce:xfce/xfce4-power-manager.git
   track: xfce4-power-manager-*
   ref: xfce4-power-manager-4.21.1-0-gf6e83d2c95a7adf58cf62b5b69c50ac11a51a2d9
+# git_repo does not fetch submodules; the meson build reads these protocol XMLs.
+- kind: git_module
+  url: freedesktop:wlroots/wlr-protocols.git
+  path: protocols/wlr-protocols
+  ref: 4264185db3b7e961e7f157e1cc4fd0ab75137568

@@ -3,6 +3,10 @@ description: |
   Settings daemon and configuration dialogs for XFCE (tuna-os/xfce-linux#158).
 
 build-depends:
+# (xmllint)
+- freedesktop-sdk.bst:components/libxml2.bst
+# meson.build: find_program('sed'/'xmllint', required: true)
+- freedesktop-sdk.bst:components/sed.bst
 - freedesktop-sdk.bst:public-stacks/buildsystem-meson.bst
 - freedesktop-sdk.bst:components/gettext.bst
 - freedesktop-sdk.bst:components/wayland-protocols.bst
@@ -35,3 +39,12 @@ sources:
   url: xfce:xfce/xfce4-settings.git
   track: xfce4-settings-*
   ref: xfce4-settings-4.21.3-0-gaacc6077e924fc0947b906b5a45e1d86526bb6a1
+# git_repo does not fetch submodules; the meson build reads these protocol XMLs.
+- kind: git_module
+  url: freedesktop:wlroots/wlr-protocols.git
+  path: protocols/wlr-protocols
+  ref: 4264185db3b7e961e7f157e1cc4fd0ab75137568
+- kind: git_module
+  url: xfce:xfce/xfce-wayland-protocols.git
+  path: protocols/xfce-wayland-protocols
+  ref: 68affb31c14127bf6c356a7a8ff9cb62cf44da4c

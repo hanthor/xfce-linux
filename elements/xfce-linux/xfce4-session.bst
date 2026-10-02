@@ -25,3 +25,10 @@ sources:
   url: xfce:xfce/xfce4-session.git
   track: xfce4-session-*
   ref: xfce4-session-4.21.1-0-g5681e8b24d192ff572a52f80e9381d6543dfd2e0
+
+# X11 session management needs iceauth (find_program, required), which
+# neither junction provides. This image runs xfwl4 (Wayland), so build
+# the session without the X11 backend.
+variables:
+  meson-local: >-
+    -Dx11=disabled

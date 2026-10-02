@@ -3,6 +3,8 @@ description: |
   Widget library and keyboard shortcuts for XFCE (tuna-os/xfce-linux#158).
 
 build-depends:
+# meson.build: find_program('sed', required: true)
+- freedesktop-sdk.bst:components/sed.bst
 - freedesktop-sdk.bst:public-stacks/buildsystem-meson.bst
 - freedesktop-sdk.bst:components/gobject-introspection.bst
 - freedesktop-sdk.bst:components/vala.bst
