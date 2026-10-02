@@ -36,3 +36,10 @@ sources:
 - kind: tar
   url: xfce_archive:src/xfce/xfwm4/4.20/xfwm4-4.20.0.tar.bz2
   ref: a58b63e49397aa0d8d1dcf0636be93c8bb5926779aef5165e0852890190dcf06
+
+variables:
+  # settings-dialogs/Makefile.am links xfwm4-settings and
+  # xfwm4-tweaks-settings without LIBXFCE4UTIL_LIBS while calling
+  # xfce_textdomain() and xfce_resource_push_path() directly. GNU ld
+  # rejects the indirect dependency ("DSO missing from command line").
+  conf-local: LIBS=-lxfce4util
