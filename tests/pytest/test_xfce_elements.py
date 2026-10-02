@@ -61,8 +61,11 @@ def test_all_expected_xfce_elements_exist():
         assert elem_path.exists(), f"Missing element: {elem_name}"
 
 
+TARBALL_ELEMENTS = {"xfce4-dev-tools.bst"}
+
+
 def test_all_xfce_elements_valid_yaml_and_sources():
-    """Each element must parse as valid YAML with kind, description, and git_repo sources."""
+    """Each element must parse as valid YAML with kind, description, and pinned upstream sources."""
     for elem_name in EXPECTED_XFCE_ELEMENTS:
         elem_path = ELEMENTS_DIR / elem_name
         data = yaml.safe_load(elem_path.read_text())
@@ -71,10 +74,16 @@ def test_all_xfce_elements_valid_yaml_and_sources():
         assert "sources" in data, f"{elem_name} missing 'sources'"
         assert len(data["sources"]) >= 1, f"{elem_name} has empty 'sources'"
         first_src = data["sources"][0]
+        assert "ref" in first_src, f"{elem_name} missing 'ref'"
+        if elem_name in TARBALL_ELEMENTS:
+            # Built from the release tarball, which carries generated files
+            # the git tag lacks (see the element's comment).
+            assert first_src.get("kind") == "tar", f"{elem_name} should use its release tarball"
+            assert first_src["url"].startswith("xfce_archive:"), f"{elem_name} tarball must come from archive.xfce.org"
+            continue
         assert first_src.get("kind") in ["git_repo", "git_module"], (
             f"{elem_name} first source is not git_repo or git_module"
         )
-        assert "ref" in first_src, f"{elem_name} missing 'ref'"
         assert "track" in first_src, f"{elem_name} missing 'track'"
 
 

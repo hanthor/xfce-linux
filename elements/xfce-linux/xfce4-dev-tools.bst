@@ -16,12 +16,11 @@ depends:
 - freedesktop-sdk.bst:components/glib.bst
 
 sources:
-- kind: git_repo
-  url: xfce:xfce/xfce4-dev-tools.git
-  track: xfce4-dev-tools-*
-  ref: xfce4-dev-tools-4.21.2-0-ga94438e6514ba63d7c7a5587100e676711335ec6
-
-config:
-  configure-commands:
-  - ./autogen.sh
-  - ./configure --prefix=/usr
+# The release tarball, not the git tag: git lacks the generated
+# docs/xdt-csource.1, which is only rebuilt in maintainer mode (and then
+# needs the DocBook stylesheets from the network), so `make` stopped with
+# "No rule to make target 'xdt-csource.1'". The tarball also ships
+# configure, so autogen.sh is not needed.
+- kind: tar
+  url: xfce_archive:src/xfce/xfce4-dev-tools/4.21/xfce4-dev-tools-4.21.2.tar.bz2
+  ref: a43f726a082b589186d9e6ed076101d41249d1e22bbe61448037550190d7f75a
