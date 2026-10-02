@@ -3,6 +3,10 @@ description: |
   Terminal emulator for the XFCE desktop environment (tuna-os/xfce-linux#158).
 
 build-depends:
+# meson.build: find_program('xsltproc', required: true), for the man page,
+# which uses the DocBook manpages stylesheet via the XML catalog.
+- freedesktop-sdk.bst:components/libxslt.bst
+- freedesktop-sdk.bst:components/docbook-xsl.bst
 - freedesktop-sdk.bst:public-stacks/buildsystem-meson.bst
 - freedesktop-sdk.bst:components/gettext.bst
 - xfce-linux/xfce4-dev-tools.bst

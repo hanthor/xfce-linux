@@ -5,6 +5,9 @@ description: |
 build-depends:
 # meson.build: find_program('xsltproc', required: true)
 - freedesktop-sdk.bst:components/libxslt.bst
+# The man page is rendered with the DocBook manpages stylesheet, resolved
+# offline through the XML catalog (xsltproc --nonet).
+- freedesktop-sdk.bst:components/docbook-xsl.bst
 - freedesktop-sdk.bst:public-stacks/buildsystem-meson.bst
 - freedesktop-sdk.bst:components/gobject-introspection.bst
 - freedesktop-sdk.bst:components/gettext.bst

@@ -29,12 +29,10 @@ depends:
 - xfce-linux/libwnck.bst
 
 sources:
-- kind: git_repo
-  url: xfce:xfce/xfwm4.git
-  track: xfwm4-*
-  ref: xfwm4-4.20.0-0-g7cadce33226be955fa2677b97a1969701d246b80
-
-config:
-  configure-commands:
-  - ./autogen.sh
-  - ./configure --prefix=/usr --disable-static
+# Release tarball, not the git tag: autogen.sh turns on maintainer mode,
+# where the settings dialogs' *_ui.h headers must be regenerated and the
+# build failed with "xfwm4-dialog_ui.h: No such file or directory". The
+# tarball ships configure and the generated headers.
+- kind: tar
+  url: xfce_archive:src/xfce/xfwm4/4.20/xfwm4-4.20.0.tar.bz2
+  ref: a58b63e49397aa0d8d1dcf0636be93c8bb5926779aef5165e0852890190dcf06

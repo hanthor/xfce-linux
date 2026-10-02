@@ -61,7 +61,7 @@ def test_all_expected_xfce_elements_exist():
         assert elem_path.exists(), f"Missing element: {elem_name}"
 
 
-TARBALL_ELEMENTS = {"xfce4-dev-tools.bst", "exo.bst"}
+TARBALL_ELEMENTS = {"xfce4-dev-tools.bst", "exo.bst", "xfwm4.bst"}
 
 
 def test_all_xfce_elements_valid_yaml_and_sources():
