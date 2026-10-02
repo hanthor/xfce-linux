@@ -8,6 +8,8 @@ build-depends:
 - freedesktop-sdk.bst:components/glib.bst
 # configure hard-requires xsltproc to build the xdt-csource man page.
 - freedesktop-sdk.bst:components/libxslt.bst
+# ...and meson on PATH (it checks for the program, not a library).
+- freedesktop-sdk.bst:public-stacks/buildsystem-meson.bst
 
 depends:
 - freedesktop-sdk.bst:public-stacks/runtime-minimal.bst
